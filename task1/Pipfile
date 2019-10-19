@@ -10,6 +10,7 @@ matplotlib = "*"
 numpy = "*"
 ipython = "*"
 jupyter = "*"
+attrs = "*"
 
 [requires]
 python_version = "3.7"
