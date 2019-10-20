@@ -8,7 +8,8 @@ def _one_step(p_n: Point, dp_n: Point, config: SystemConfig):
                  t=p_n.t + config.dt)
 
 
-def solve_euler_explicit(x0, y0, z0, t0, config=SystemConfig()):
+def solve_euler_explicit(x0: float, y0: float, z0: float, t0: float,
+                         config=SystemConfig()):
     p = Point(x0, y0, z0, t0)
 
     pts = [p]
@@ -19,7 +20,8 @@ def solve_euler_explicit(x0, y0, z0, t0, config=SystemConfig()):
     return pts
 
 
-def solve_euler_implicit(x0, y0, z0, t0, config=SystemConfig()):
+def solve_euler_implicit(x0: float, y0: float, z0: float, t0: float,
+                         config=SystemConfig()):
     p = Point(x0, y0, z0, t0)
 
     pts = [p]

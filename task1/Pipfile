@@ -11,6 +11,9 @@ numpy = "*"
 ipython = "*"
 jupyter = "*"
 attrs = "*"
+plotly = "*"
+chart_studio = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.7"
