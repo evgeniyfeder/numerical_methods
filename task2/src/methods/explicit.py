@@ -3,7 +3,7 @@ import numpy as np
 from eq_config import EqConfig
 
 
-class ImplicitMethod:
+class ExplicitMethod:
     @classmethod
     def _next_element(cls, prev_t: float, cur_t: float, next_t: float, config: EqConfig) -> float:
         raise NotImplementedError
@@ -15,25 +15,25 @@ class ImplicitMethod:
         for i in range(config.num_points):
             prev_t = prev_ts[i - 1] if i > 0 else config.left_border(prev_ts)
             cur_t = prev_ts[i]
-            next_t = prev_ts[i + 1] if i < config.num_points-1 else 0
+            next_t = prev_ts[i + 1] if i < config.num_points - 1 else 0
 
             next_ts[i] = cls._next_element(prev_t, cur_t, next_t, config)
         return next_ts
 
 
-class ImplicitAgainst(ImplicitMethod):
+class ExplicitAgainst(ExplicitMethod):
     @classmethod
     def _next_element(cls, prev_t: float, cur_t: float, next_t: float, config: EqConfig) -> float:
         return cur_t - config.s * (cur_t - prev_t) + config.r * (prev_t + next_t - 2 * cur_t)
 
 
-class ImplicitDown(ImplicitMethod):
+class ExplicitDown(ExplicitMethod):
     @classmethod
     def _next_element(cls, prev_t: float, cur_t: float, next_t: float, config: EqConfig) -> float:
         return cur_t - config.s * (next_t - cur_t) + config.r * (prev_t + next_t - 2 * cur_t)
 
 
-class ImplicitLeapfrog(ImplicitMethod):
+class ExplicitLeapfrog(ExplicitMethod):
     @classmethod
     def _next_element(cls, prev_t: float, cur_t: float, next_t: float, config: EqConfig) -> float:
         return cur_t - config.s * (next_t - prev_t)
