@@ -1,7 +1,7 @@
 import attr
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, frozen=True)
 class EqConfig:
     v: float
     kappa: float
