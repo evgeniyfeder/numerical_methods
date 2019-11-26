@@ -3,14 +3,14 @@ import attr
 
 @attr.s(auto_attribs=True, frozen=True)
 class EqConfig:
-    v: float
+    u: float
     kappa: float
     dt: float
     dx: float
 
     @property
     def r(self):
-        return self.v * self.dt / self.dx
+        return self.u * self.dt / self.dx
 
     @property
     def s(self):
