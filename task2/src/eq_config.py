@@ -9,11 +9,11 @@ class EqConfig:
     dx: float
 
     @property
-    def r(self):
+    def s(self):
         return self.u * self.dt / self.dx
 
     @property
-    def s(self):
+    def r(self):
         return self.kappa * self.dt / (self.dx ** 2)
 
     a: float
@@ -26,7 +26,7 @@ class EqConfig:
         return int((self.b - self.a) / self.dt)
 
     def left_border(self, Ts):
-        return 0
+        return 0 # Ts[0]
 
     def right_border(self, Ts):
-        return 0
+        return 0 # Ts[-1]

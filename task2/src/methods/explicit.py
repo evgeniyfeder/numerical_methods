@@ -15,7 +15,7 @@ class ExplicitMethod:
         for i in range(config.num_points):
             prev_t = prev_ts[i - 1] if i > 0 else config.left_border(prev_ts)
             cur_t = prev_ts[i]
-            next_t = prev_ts[i + 1] if i < config.num_points - 1 else 0
+            next_t = prev_ts[i + 1] if i < config.num_points - 1 else config.right_border(prev_ts)
 
             next_ts[i] = cls._next_element(prev_t, cur_t, next_t, config)
         return next_ts

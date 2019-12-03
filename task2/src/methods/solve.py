@@ -16,7 +16,7 @@ def solve(begin_ts: np.array, method: Callable[[np.array, EqConfig], np.array], 
         ts = method(ts, config)
 
         df = pd.DataFrame(
-            {"time": t, "x": config.a + config.dx * i, "T": begin_ts[i]}
+            {"time": t, "x": config.a + config.dx * j, "T": ts[j]}
             for j in range(config.num_points)
         )
         results = results.append(df)
