@@ -4,42 +4,66 @@ from eq_config import EqConfig
 
 
 class ImplicitMethod:
-    @classmethod
-    def _next_element(cls, *, up_left_t: float, up_mid_t: float, down_mid_t: float, config: EqConfig) -> float:
+    @staticmethod
+    def _solve_tridiagonal_linear(a: np.array, b: np.array, c: np.array, d: np.array):
+        nf = len(d)
+        ac, bc, cc, dc = map(np.array, (a, b, c, d))
+        for it in range(1, nf):
+            mc = ac[it - 1] / bc[it - 1]
+            bc[it] = bc[it] - mc * cc[it - 1]
+            dc[it] = dc[it] - mc * dc[it - 1]
+        xc = bc
+        xc[-1] = dc[-1] / bc[-1]
+
+        for il in range(nf - 2, -1, -1):
+            xc[il] = (dc[il] - cc[il] * xc[il + 1]) / bc[il]
+
+        return xc
+
+    @staticmethod
+    def _fill_coeffs_for_linear(a: np.array, b: np.array, c: np.array, d: np.array, prev_ts: np.array,
+                                config: EqConfig):
         raise NotImplementedError
 
     @classmethod
     def next_ts(cls, prev_ts: np.array, config: EqConfig) -> np.array:
-        next_ts = np.zeros(config.num_points, dtype=np.float64)
-
-        for i in range(config.num_points):
-            up_left_t = next_ts[i - 2] if i > 1 else config.left_border(prev_ts)
-            up_mid_t = next_ts[i - 1] if i > 0 else config.left_border(prev_ts)
-            down_mid_t = prev_ts[i - 1] if i > 0 else config.left_border(prev_ts)
-            # todo: не уверен на счет left_border
-            next_ts[i] = cls._next_element(up_left_t=up_left_t, up_mid_t=up_mid_t, down_mid_t=down_mid_t, config=config)
-        return next_ts
+        a, c = np.zeros(config.num_points - 1, dtype=np.float64), np.zeros(config.num_points - 1, dtype=np.float64)
+        b, d = np.zeros(config.num_points, dtype=np.float64), np.zeros(config.num_points, dtype=np.float64)
+        cls._fill_coeffs_for_linear(a, b, c, d, prev_ts, config)
+        return cls._solve_tridiagonal_linear(a, b, c, d)
 
 
 class ImplicitAgainst(ImplicitMethod):
-    @classmethod
-    def _next_element(cls, *, up_left_t: float, up_mid_t: float, down_mid_t: float, config: EqConfig) -> float:
-        u = config.u
-        kappa = config.kappa
-        dx = config.dx
-        dt = config.dt
-        return up_left_t * (config.kappa / (config.u * config.dx - config.kappa)) - \
-               up_mid_t * (dx ** 2 - u * dx * dt + 2 * dt * kappa) / (u * dx * dt - kappa * dt) + \
-               down_mid_t * (dx ** 2 / (dt * (u * dx - kappa)))
+    @staticmethod
+    def _fill_coeffs_for_linear(a: np.array, b: np.array, c: np.array, d: np.array, prev_ts: np.array,
+                                config: EqConfig):
+        s = config.s
+        r = config.r
+        for i in range(config.num_points):
+            b[i] = 1 + s + 2 * r
+            d[i] = prev_ts[i]
+        d[0] += config.left_border(prev_ts) * (r + s)
+        d[config.num_points - 1] += config.right_border(prev_ts) * r
+        for i in range(config.num_points - 1):
+            a[i] = - r - s
+            c[i] = -r
+        return ImplicitMethod._solve_tridiagonal_linear(a, b, c, d)
 
 
 class ImplicitDown(ImplicitMethod):
-    @classmethod
-    def _next_element(cls, *, up_left_t: float, up_mid_t: float, down_mid_t: float, config: EqConfig) -> float:
-        u = config.u
-        kappa = config.kappa
-        dx = config.dx
-        dt = config.dt
-        return - up_left_t * (u * dx + kappa) / kappa + \
-                 up_mid_t * (dx ** 2 + u * dx * dt + 2 * dt * kappa) / (kappa * dt) - \
-                 down_mid_t * dx ** 2 / (kappa * dt)
+    @staticmethod
+    def _fill_coeffs_for_linear(a: np.array, b: np.array, c: np.array, d: np.array, prev_ts: np.array,
+                                config: EqConfig):
+        s = config.s
+        r = config.r
+        for i in range(config.num_points):
+            b[i] = 1 - s + 2 * r
+            d[i] = prev_ts[i]
+        d[0] += config.left_border(prev_ts) * r
+        d[config.num_points - 1] -= config.right_border(prev_ts) * (s - r)
+
+        for i in range(config.num_points - 1):
+            a[i] = -r
+            c[i] = s - r
+
+        return ImplicitMethod._solve_tridiagonal_linear(a, b, c, d)

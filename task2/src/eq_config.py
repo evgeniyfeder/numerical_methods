@@ -23,7 +23,7 @@ class EqConfig:
 
     @property
     def num_points(self):
-        return int((self.b - self.a) / self.dt)
+        return int((self.b - self.a) / self.dx)
 
     def left_border(self, Ts):
         return 0 # Ts[0]
