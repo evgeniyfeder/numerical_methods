@@ -31,9 +31,3 @@ class ExplicitDown(ExplicitMethod):
     @classmethod
     def _next_element(cls, prev_t: float, cur_t: float, next_t: float, config: EqConfig) -> float:
         return cur_t - config.s * (next_t - cur_t) + config.r * (prev_t + next_t - 2 * cur_t)
-
-
-class ExplicitLeapfrog(ExplicitMethod):
-    @classmethod
-    def _next_element(cls, prev_t: float, cur_t: float, next_t: float, config: EqConfig) -> float:
-        return cur_t - config.s * (next_t - prev_t)
