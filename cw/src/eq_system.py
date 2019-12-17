@@ -3,13 +3,20 @@ import math
 
 
 @attr.s(auto_attribs=True)
-class System:
+class SystemConfig:
     dt: float
     dz: float
-    h: float
+    max_z: float
     k: int
     E: int
     alpha: float
+    num_iter: int
+
+    #iter parametres
+
+    @property
+    def num_points(self):
+        return self.max_z / self.dz
 
     R: float = 8.314
     K: int = 1.6 * 10 ** 6  # 1 / сек
