@@ -2,21 +2,20 @@ import attr
 import math
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, str=False)
 class SystemConfig:
     dt: float
     dz: float
     max_z: float
     k: int
-    E: int
     alpha: float
     num_iter: int
 
     #iter parametres
 
     @property
-    def num_points(self):
-        return self.max_z / self.dz
+    def num_points(self) -> int:
+        return int(self.max_z / self.dz)
 
     R: float = 8.314
     K: int = 1.6 * 10 ** 6  # 1 / сек
@@ -60,3 +59,12 @@ class SystemConfig:
                * (self.T_0 / self.T_m) \
                * (self.R * self.T_m ** 2 / self.E) ** 2 \
                * math.exp(-self.E / (self.R * self.T_m))
+    
+    def __str__(self) -> str:
+        res = "System Config:\n"
+        for at in attr.fields(type(self)):
+            res += f'{at.name}={getattr(self, at.name)}\n'
+        for prop in ['num_points', 'kappa', 'dT', 'T_m', 'betta', 'sigma', 'U']:
+            res += f'{prop}={getattr(self, prop)}\n'
+        return res
+        

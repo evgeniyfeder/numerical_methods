@@ -4,7 +4,7 @@ from typing import Callable, Iterator
 import numpy as np
 import pandas as pd
 from eq_system import SystemConfig
-
+from tqdm import tqdm_notebook
 
 def _solve(begin_ts: np.array,
            begin_xs: np.array,
@@ -17,7 +17,7 @@ def _solve(begin_ts: np.array,
         for i in range(config.num_points))
     yield start_frame
 
-    for i in range(1, config.num_iter + 1):
+    for i in tqdm_notebook(range(1, config.num_iter + 1)):
         t = config.dt * i
         cur_ts, cur_xs = method(cur_ts, cur_xs, config)
 
@@ -27,7 +27,7 @@ def _solve(begin_ts: np.array,
         yield new_frame
 
 
-def solve(begin_ts: np.array,
+def solve(*, begin_ts: np.array,
           begin_xs: np.array,
           method: Callable[[np.array, np.array, SystemConfig], np.array],
           config: SystemConfig,

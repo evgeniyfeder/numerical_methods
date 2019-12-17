@@ -14,6 +14,7 @@ attrs = "*"
 plotly = "*"
 chart_studio = "*"
 pandas = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.7"

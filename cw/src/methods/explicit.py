@@ -17,7 +17,7 @@ class ExplicitMethod:
         raise NotImplementedError
 
     @classmethod
-    def next_ts(cls, prev_ts: np.array, prev_xs: np.array, config: SystemConfig) -> np.array:
+    def next_xs_ts(cls, prev_ts: np.array, prev_xs: np.array, config: SystemConfig) -> np.array:
         next_ts = np.zeros(config.num_points, dtype=np.float64)
         next_xs = np.zeros(config.num_points, dtype=np.float64)
 
