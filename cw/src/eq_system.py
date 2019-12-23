@@ -7,7 +7,6 @@ class SystemConfig:
     dt: float
     dz: float
     max_z: float
-    k: int
     alpha: float
     num_iter: int
 
@@ -21,14 +20,12 @@ class SystemConfig:
     K: int = 1.6 * 10 ** 6  # 1 / сек
     E: int = 8 * 10 ** 4  # Дж / моль
     Q: int = 7 * 10 ** 5  # Дж / кг
-    E_0: int = 293  # K
+    T_0: int = 293  # K
     rho: int = 830  # кг / м^3
     C: int = 1990  # Дж / кг * К
 
     Lambda: float = 0.13  # Вт / м * К
-    D: float = 8 * 10 ** (-12)  # м^2 / сек
-
-    T_0: int = 293
+    D: float = 8 * 10 ** (-12)  # 0.13 / (830 * 1990)   #   # м^2 / сек
 
     @property
     def kappa(self):
@@ -51,11 +48,15 @@ class SystemConfig:
         return self.R * (self.T_m ** 2) / (self.E * self.dT)
 
     def W(self, x, t):
-        return -self.k * (x ** self.alpha) * math.exp(-self.E / (self.R * t))
+        return -self.K * (x ** self.alpha) * math.exp(-self.E / (self.R * t))
+
+    def MagicW(self, x, t):
+        print(t)
+        return -self.K * (x ** (self.alpha - 1)) * math.exp(-self.E / (self.R * t))
 
     @property
     def U(self):
-        return (2 * self.k * self.Lambda) / (self.Q * self.rho * self.dT) \
+        return (2 * self.K * self.Lambda) / (self.Q * self.rho * self.dT) \
                * (self.T_0 / self.T_m) \
                * (self.R * self.T_m ** 2 / self.E) ** 2 \
                * math.exp(-self.E / (self.R * self.T_m))

@@ -6,12 +6,14 @@ import pandas as pd
 from eq_system import SystemConfig
 from tqdm import tqdm_notebook
 
+
 def _solve(begin_ts: np.array,
            begin_xs: np.array,
            method: Callable[[np.array, np.array, SystemConfig], np.array],
            config: SystemConfig) -> Iterator[pd.DataFrame]:
     cur_ts = begin_ts
     cur_xs = begin_xs
+
     start_frame = pd.DataFrame(
         {"time": 0, "x": config.dz * i, "T": begin_ts[i], "X": begin_xs[i]}
         for i in range(config.num_points))
@@ -19,7 +21,7 @@ def _solve(begin_ts: np.array,
 
     for i in tqdm_notebook(range(1, config.num_iter + 1)):
         t = config.dt * i
-        cur_ts, cur_xs = method(cur_ts, cur_xs, config)
+        cur_xs, cur_ts = method(cur_ts, cur_xs, config)
 
         new_frame = pd.DataFrame(
             {"time": t, "x": config.dz * j, "T": cur_ts[j], "X": cur_xs[j]}

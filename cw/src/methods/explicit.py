@@ -22,18 +22,18 @@ class ExplicitMethod:
         next_xs = np.zeros(config.num_points, dtype=np.float64)
 
         for i in range(config.num_points):
-            prev_t = prev_ts[i - 1] if i > 0 else 0
+            prev_t = prev_ts[i - 1] if i > 0 else config.T_m
             cur_t = prev_ts[i]
-            next_t = prev_ts[i + 1] if i < config.num_points - 1 else 0
+            next_t = prev_ts[i + 1] if i < config.num_points - 1 else prev_ts[config.num_points - 1]
 
             prev_x = prev_xs[i - 1] if i > 0 else 0
             cur_x = prev_xs[i]
-            next_x = prev_xs[i + 1] if i < config.num_points - 1 else 0
+            next_x = prev_xs[i + 1] if i < config.num_points - 1 else prev_xs[config.num_points - 1]
 
             next_ts[i] = cls._next_t(prev_t, cur_t, next_t, prev_x, cur_x, next_x, config)
             next_xs[i] = cls._next_x(prev_t, cur_t, next_t, prev_x, cur_x, next_x, config)
 
-        return next_ts, next_xs
+        return next_xs, next_ts
 
 
 class ExplicitMethodImpl(ExplicitMethod):
