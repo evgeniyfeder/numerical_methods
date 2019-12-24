@@ -25,7 +25,7 @@ class SystemConfig:
     C: int = 1990  # Дж / кг * К
 
     Lambda: float = 0.13  # Вт / м * К
-    D: float = 8 * 10 ** (-12)  # 0.13 / (830 * 1990)   #   # м^2 / сек
+    D: float = 0.13 / (830 * 1990) # 8 * 10 ** (-12)    #   # м^2 / сек
 
     @property
     def kappa(self):
