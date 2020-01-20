@@ -3,10 +3,19 @@ from eq_system import SystemConfig
 
 
 class ImplicitMethod:
-    @staticmethod
-    def _solve_tridiagonal_linear(a: np.array, b: np.array, c: np.array, d: np.array):
-        nf = len(d)
-        ac, bc, cc, dc = (a, b, c, d)
+    def __init__(self, begin_ts: np.array, begin_xs: np.array, config: SystemConfig):
+        self.cur_ts = np.copy(begin_ts)
+        self.cur_xs = np.copy(begin_xs)
+        # buffers for temporary values
+        self.a = np.zeros(config.num_points - 1, dtype=np.float64)
+        self.c = np.zeros(config.num_points - 1, dtype=np.float64)
+        self.b = np.zeros(config.num_points, dtype=np.float64)
+        self.d = np.zeros(config.num_points, dtype=np.float64)
+        self.config = config
+
+    def _solve_tridiagonal_linear(self):
+        nf = len(self.d)
+        ac, bc, cc, dc = (self.a, self.b, self.c, self.d)
         for it in range(1, nf):
             mc = ac[it - 1] / bc[it - 1]
             bc[it] = bc[it] - mc * cc[it - 1]
@@ -19,86 +28,97 @@ class ImplicitMethod:
 
         return xc
 
-    @staticmethod
-    def _fill_coeffs_for_linear_x(a: np.array, b: np.array, c: np.array, d: np.array, prev_xs: np.array,
-                                  prev_ts: np.array,
-                                  config: SystemConfig):
+    def _fill_abcd_for_linear_x(self):
         raise NotImplementedError
 
-    @staticmethod
-    def _fill_coeffs_for_linear_t(a: np.array, b: np.array, c: np.array, d: np.array, prev_xs: np.ndarray,
-                                  prev_ts: np.array,
-                                  config: SystemConfig):
+    def _fill_abcd_for_linear_t(self):
         raise NotImplementedError
 
-    @classmethod
-    def count_next(cls, prev_ts: np.ndarray, prev_xs: np.array, f, config: SystemConfig):
-        a, c = np.zeros(config.num_points - 1, dtype=np.float64), np.zeros(config.num_points - 1, dtype=np.float64)
-        b, d = np.zeros(config.num_points, dtype=np.float64), np.zeros(config.num_points, dtype=np.float64)
-        f(a, b, c, d, prev_xs, prev_ts, config)
-        return cls._solve_tridiagonal_linear(a, b, c, d)
+    def _fill_abcd_zero(self):
+        self.a = np.zeros(self.config.num_points - 1, dtype=np.float64)
+        self.c = np.zeros(self.config.num_points - 1, dtype=np.float64)
+        self.b = np.zeros(self.config.num_points, dtype=np.float64)
+        self.d = np.zeros(self.config.num_points, dtype=np.float64)
 
-    @classmethod
-    def next_xs_ts(cls, prev_ts: np.ndarray, prev_xs: np.array, config: SystemConfig) -> np.array:
-        next_xs = cls.count_next(prev_ts, prev_xs, cls._fill_coeffs_for_linear_x, config)
+    def __iter__(self):
+        return self
 
-        next_ts = cls.count_next(prev_ts, prev_xs, cls._fill_coeffs_for_linear_t, config)
-        return next_xs, next_ts
+    def __next__(self):
+        prev_xs = self.cur_xs
+        prev_ts = self.cur_ts
+
+        self._fill_abcd_for_linear_x()
+        np.copyto(self.cur_xs, self._solve_tridiagonal_linear())
+        # assert not np.array_equal(prev_ts, self.cur_ts)
+
+        self._fill_abcd_for_linear_t()
+        np.copyto(self.cur_ts, self._solve_tridiagonal_linear())
+        return prev_ts, prev_xs
 
 
 class WImplicitMethod(ImplicitMethod):
-    @staticmethod
-    def _fill_coeffs_for_linear_x(a: np.array, b: np.array, c: np.array, d: np.array, prev_xs: np.array,
-                                  prev_ts: np.array,
-                                  config: SystemConfig):
-        for i in range(config.num_points - 1):
-            a[i] = -config.D / (config.dz ** 2)
-            c[i] = -config.D / (config.dz ** 2)
+    def _fill_abcd_for_linear_x(self):
+        prev_xs = self.cur_xs
+        prev_ts = self.cur_ts
+        config = self.config
 
-        for i in range(config.num_points):
-            b[i] = 2 * config.D / (config.dz ** 2) + 1 / config.dt
-            d[i] = config.W(prev_xs[i], prev_ts[i]) + prev_xs[i] / config.dt
+        # for i in range(config.num_points - 1):
+        #     self.a[i] = -config.D / (config.dz ** 2)
+        #     self.c[i] = -config.D / (config.dz ** 2)
+        #
+        # # for i in range(config.num_points):
+        #     self.b[i] = 2 * config.D / (config.dz ** 2) + 1 / config.dt
+        #     self.d[i] = config.W(prev_xs[i], prev_ts[i]) + prev_xs[i] / config.dt
+        #
+        self.a.fill(-config.D / (config.dz ** 2))
+        self.c.fill(-config.D / (config.dz ** 2))
+        self.b.fill(2 * config.D / (config.dz ** 2) + 1 / config.dt)
+        self.d = np.vectorize(config.W)(prev_xs, prev_ts) + prev_xs / config.dt
 
-        b[config.num_points - 1] = config.D / (config.dz ** 2) + 1 / config.dt
+        self.b[config.num_points - 1] = config.D / (config.dz ** 2) + 1 / config.dt
 
-    @staticmethod
-    def _fill_coeffs_for_linear_t(a: np.array, b: np.array, c: np.array, d: np.array, prev_xs: np.ndarray,
-                                  prev_ts: np.array,
-                                  config: SystemConfig):
-        for i in range(config.num_points - 1):
-            a[i] = -config.kappa / (config.dz ** 2)
-            c[i] = -config.kappa / (config.dz ** 2)
+    def _fill_abcd_for_linear_t(self):
+        prev_xs = self.cur_xs
+        prev_ts = self.cur_ts
+        config = self.config
+        # for i in range(config.num_points - 1):
+        #     self.a[i] = -config.kappa / (config.dz ** 2)
+        #     self.c[i] = -config.kappa / (config.dz ** 2)
+        #
+        # for i in range(config.num_points):
+        #     self.b[i] = 2 * config.kappa / (config.dz ** 2) + 1 / config.dt
+        #     self.d[i] = -config.Q / config.C * config.W(prev_xs[i], prev_ts[i]) + prev_ts[i] / config.dt
+        self.a.fill(-config.kappa / (config.dz ** 2))
+        self.c.fill(-config.kappa / (config.dz ** 2))
+        self.b.fill(2 * config.kappa / (config.dz ** 2) + 1 / config.dt)
+        self.d = -config.Q / config.C * np.vectorize(config.W)(prev_xs, prev_ts) + prev_ts / config.dt
 
-        for i in range(config.num_points):
-            b[i] = 2 * config.kappa / (config.dz ** 2) + 1 / config.dt
-            d[i] = -config.Q / config.C * config.W(prev_xs[i], prev_ts[i]) + prev_ts[i] / config.dt
-
-        d[0] += (config.kappa * config.T_m) / (config.dz ** 2)
-        b[config.num_points - 1] = config.kappa / (config.dz ** 2) + 1 / config.dt
+        self.d[0] += (config.kappa * config.T_m) / (config.dz ** 2)
+        self.b[config.num_points - 1] = config.kappa / (config.dz ** 2) + 1 / config.dt
 
 
 class MagicWImplicitMethod(ImplicitMethod):
-    @staticmethod
-    def _fill_coeffs_for_linear_x(a: np.array, b: np.array, c: np.array, d: np.array, prev_xs: np.array,
-                                  prev_ts: np.array,
-                                  config: SystemConfig):
+    def _fill_abcd_for_linear_x(self):
+        prev_xs = self.cur_xs
+        prev_ts = self.cur_ts
+        config = self.config
         for i in range(config.num_points - 1):
-            a[i] = -config.D / (config.dz ** 2)
-            c[i] = -config.D / (config.dz ** 2)
+            self.a[i] = -config.D / (config.dz ** 2)
+            self.c[i] = -config.D / (config.dz ** 2)
 
         for i in range(config.num_points):
-            b[i] = 2 * config.D / (config.dz ** 2) + 1 / config.dt - config.MagicW(prev_xs[i], prev_ts[i])
-            d[i] = prev_xs[i] / config.dt
+            self.b[i] = 2 * config.D / (config.dz ** 2) + 1 / config.dt - config.MagicW(prev_xs[i], prev_ts[i])
+            self.d[i] = prev_xs[i] / config.dt
 
-    @staticmethod
-    def _fill_coeffs_for_linear_t(a: np.array, b: np.array, c: np.array, d: np.array, prev_xs: np.ndarray,
-                                  prev_ts: np.array,
-                                  config: SystemConfig):
+    def _fill_abcd_for_linear_t(self):
+        prev_xs = self.cur_xs
+        prev_ts = self.cur_ts
+        config = self.config
         for i in range(config.num_points - 1):
-            a[i] = -config.kappa / (config.dz ** 2)
-            c[i] = -config.kappa / (config.dz ** 2)
+            self.a[i] = -config.kappa / (config.dz ** 2)
+            self.c[i] = -config.kappa / (config.dz ** 2)
 
         for i in range(config.num_points):
-            b[i] = 2 * config.kappa / (config.dz ** 2) \
+            self.b[i] = 2 * config.kappa / (config.dz ** 2) \
                    + 1 / config.dt + config.Q / config.C * config.W(prev_xs[i], prev_ts[i])
-            d[i] = prev_ts[i] / config.dt
+            self.d[i] = prev_ts[i] / config.dt

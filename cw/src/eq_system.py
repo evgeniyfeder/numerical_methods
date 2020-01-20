@@ -1,5 +1,6 @@
 import attr
 import math
+import numpy as np
 
 
 @attr.s(auto_attribs=True, str=False)
@@ -8,24 +9,27 @@ class SystemConfig:
     dz: float
     max_z: float
     alpha: float
-    num_iter: int
 
-    #iter parametres
+    # iter parametres
 
     @property
     def num_points(self) -> int:
         return int(self.max_z / self.dz)
 
+    @property
+    def xs(self) -> np.array:
+        return np.linspace(0, self.max_z, self.num_points)
+
     R: float = 8.314
-    K: int = 1.6 * 10 ** 6  # 1 / сек
-    E: int = 8 * 10 ** 4  # Дж / моль
-    Q: int = 7 * 10 ** 5  # Дж / кг
-    T_0: int = 293  # K
-    rho: int = 830  # кг / м^3
-    C: int = 1990  # Дж / кг * К
+    K: float = 1.6 * 10 ** 6  # 1 / сек
+    E: float = 8 * 10 ** 4  # Дж / моль
+    Q: float = 7 * 10 ** 5  # Дж / кг
+    T_0: float = 293  # K
+    rho: float = 830  # кг / м^3
+    C: float = 1990  # Дж / кг * К
 
     Lambda: float = 0.13  # Вт / м * К
-    D: float = 0.13 / (830 * 1990) # 8 * 10 ** (-12)    #   # м^2 / сек
+    D: float = 8 * 10 ** (-12)   # м^2 / сек
 
     @property
     def kappa(self):
@@ -38,6 +42,7 @@ class SystemConfig:
     @property
     def T_m(self):
         return self.T_0 + self.dT
+        # return 600
 
     @property
     def betta(self):
@@ -56,11 +61,13 @@ class SystemConfig:
 
     @property
     def U(self):
-        return (2 * self.K * self.Lambda) / (self.Q * self.rho * self.dT) \
-               * (self.T_0 / self.T_m) \
-               * (self.R * self.T_m ** 2 / self.E) ** 2 \
-               * math.exp(-self.E / (self.R * self.T_m))
-    
+        t = (2 * self.K * self.Lambda) \
+            / (self.Q * self.rho * self.dT) \
+            * (self.T_0 / self.T_m) \
+            * (self.R * self.T_m ** 2 / self.E) ** 2 \
+            * math.exp(-self.E / (self.R * self.T_m))
+        return math.sqrt(t)
+
     def __str__(self) -> str:
         res = "System Config:\n"
         for at in attr.fields(type(self)):
@@ -68,4 +75,3 @@ class SystemConfig:
         for prop in ['num_points', 'kappa', 'dT', 'T_m', 'betta', 'sigma', 'U']:
             res += f'{prop}={getattr(self, prop)}\n'
         return res
-        

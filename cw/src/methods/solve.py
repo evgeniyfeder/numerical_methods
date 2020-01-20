@@ -1,39 +1,44 @@
 import itertools
-from typing import Callable, Iterator
+from typing import Callable, Iterator, Tuple, Optional
 
+import attr
 import numpy as np
 import pandas as pd
 from eq_system import SystemConfig
 from tqdm import tqdm_notebook
 
 
-def _solve(begin_ts: np.array,
-           begin_xs: np.array,
-           method: Callable[[np.array, np.array, SystemConfig], np.array],
-           config: SystemConfig,
-           freq: int) -> Iterator[pd.DataFrame]:
-    cur_ts = begin_ts
-    cur_xs = begin_xs
+@attr.s(auto_attribs=True)
+class Frame:
+    time: float
+    Ts: np.array
+    Xs: np.array
 
-    start_frame = pd.DataFrame(
-        {"time": 0, "x": config.dz * i, "T": begin_ts[i], "X": begin_xs[i]}
-        for i in range(config.num_points))
-    yield start_frame
 
-    for i in tqdm_notebook(range(1, config.num_iter + 1)):
-        t = config.dt * i
-        cur_xs, cur_ts = method(cur_ts, cur_xs, config)
+def solve_iter(begin_ts: np.array,
+               begin_xs: np.array,
+               method: Callable[[np.array, np.array, SystemConfig],
+                                Iterator[Tuple[np.array, np.array]]],
+               config: SystemConfig,
+               freq: int = 100,
+               num_iter: int = 1000000000) -> Iterator[Frame]:
+    # return itertools.islice(
+    #     map(lambda p: Frame(time=config.dt * p[0], Ts=p[1][0], Xs=p[1][1]),
+    #         enumerate(method(begin_ts, begin_xs, config), start=0))
+    #     , 0, None, freq
+    # )
+    for i, (cur_ts, cur_xs) in tqdm_notebook(enumerate(method(begin_ts, begin_xs, config),
+                                                       start=0),
+                                             total=num_iter):
         if i % freq == 0:
-            new_frame = pd.DataFrame(
-                {"time": t, "x": config.dz * j, "T": cur_ts[j], "X": cur_xs[j]}
-                for j in range(config.num_points))
-            yield new_frame
+            yield Frame(time=config.dt * i, Ts=cur_ts, Xs=cur_xs)
+        if i > num_iter:
+            break
 
-
-def solve(*, begin_ts: np.array,
-          begin_xs: np.array,
-          method: Callable[[np.array, np.array, SystemConfig], np.array],
-          config: SystemConfig,
-          freq: int = None) -> pd.DataFrame:
-    frames = _solve(begin_ts, begin_xs, method, config, freq=freq)
-    return pd.concat(list(frames))
+# def solve(*, begin_ts: np.array,
+#           begin_xs: np.array,
+#           method: Callable[[np.array, np.array, SystemConfig], np.array],
+#           config: SystemConfig,
+#           freq: int = None) -> pd.DataFrame:
+#     frames = _solve(begin_ts, begin_xs, method, config, freq=freq)
+#     return pd.concat(list(frames))
