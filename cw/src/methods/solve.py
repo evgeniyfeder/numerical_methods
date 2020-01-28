@@ -13,6 +13,7 @@ class Frame:
     time: float
     Ts: np.array
     Xs: np.array
+    Ws: np.array
 
 
 def solve_iter(begin_ts: np.array,
@@ -31,7 +32,8 @@ def solve_iter(begin_ts: np.array,
                                                        start=0),
                                              total=num_iter):
         if i % freq == 0:
-            yield Frame(time=config.dt * i, Ts=cur_ts, Xs=cur_xs)
+            yield Frame(time=config.dt * i, Ts=cur_ts, Xs=cur_xs,
+                        Ws=np.vectorize(config.W)(cur_xs, cur_ts))
         if i > num_iter:
             break
 
